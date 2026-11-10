@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kabutar Agent — Flight Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#12131a;
+    --surface:#1b1d26;
+    --surface-2:#23252f;
+    --ink:#edeef3;
+    --ink-dim:#8c8fa3;
+    --line:#2c2f3b;
+    --wa:#3fcb8c;
+    --groq:#e8a94a;
+    --fail:#e2685f;
+    --radius:14px;
+    --font-display:'Bricolage Grotesque', sans-serif;
+    --font-body:'IBM Plex Sans', sans-serif;
+    --font-mono:'IBM Plex Mono', monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);}
+  body{position:relative;overflow:hidden;}
+  body::before{
+    content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(ellipse 60% 40% at 15% -5%, rgba(63,203,140,0.07), transparent 60%),
+      radial-gradient(ellipse 55% 45% at 95% 105%, rgba(232,169,74,0.06), transparent 55%);
+  }
+  ::selection{background:var(--wa);color:#0c0d12;}
+  a{color:inherit;}
+
+  .deck{position:relative;z-index:1;height:100vh;height:100dvh;overflow-y:auto;scroll-snap-type:y mandatory;scroll-behavior:smooth;}
+  .slide{
+    min-height:100vh;min-height:100dvh;
+    scroll-snap-align:start;
+    display:flex;flex-direction:column;justify-content:center;
+    padding:100px 8vw 130px;
+    position:relative;
+    border-bottom:1px solid var(--line);
+  }
+  .slide-inner{max-width:980px;width:100%;margin:0 auto;position:relative;z-index:1;}
+  .slide.center{align-items:center;text-align:center;}
+  .slide.center .slide-inner{margin:0 auto;}
+
+  .kicker{
+    font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.16em;
+    font-size:12px;color:var(--groq);margin-bottom:18px;display:block;
+  }
+  .slide h1{font-family:var(--font-display);font-weight:800;font-size:clamp(2.3rem,5.5vw,4.2rem);line-height:1.04;margin:0 0 20px;letter-spacing:-0.01em;}
+  .slide h2{font-family:var(--font-display);font-weight:700;font-size:clamp(1.9rem,4.2vw,3rem);margin:0 0 16px;letter-spacing:-0.01em;}
+  .lede{font-size:clamp(1rem,1.4vw,1.2rem);color:var(--ink-dim);max-width:660px;line-height:1.6;}
+  .lede.center{margin:0 auto;}
+
+  .urdu{font-family:var(--font-body);font-size:15px;color:var(--ink-dim);letter-spacing:.04em;margin-bottom:10px;font-weight:400;}
+  .gloss{font-family:var(--font-mono);font-size:13px;color:var(--ink-dim);margin-top:26px;max-width:560px;line-height:1.6;}
+  .gloss em{color:var(--ink);font-style:normal;}
+
+  /* hero diagram */
+  .hero-diagram{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:44px;}
+  .node{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 16px;font-family:var(--font-mono);font-size:12.5px;white-space:nowrap;line-height:1.4;}
+  .node span{display:block;color:var(--ink-dim);font-size:11px;margin-top:2px;}
+  .node-strong{border-color:var(--groq);color:var(--groq);}
+  .node-accent{border-color:var(--wa);}
+  .arrow{color:var(--ink-dim);font-size:18px;padding:0 2px;}
+  .branch{display:flex;flex-direction:column;gap:8px;}
+
+  .chip-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:32px;}
+  .chip{font-family:var(--font-mono);font-size:12px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:7px 15px;color:var(--ink-dim);}
+
+  /* card row */
+  .card-row{display:flex;gap:20px;flex-wrap:wrap;margin-top:38px;}
+  .card{flex:1 1 240px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:24px 24px;}
+  .card-kicker{font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--groq);margin-bottom:12px;}
+  .card h3{font-family:var(--font-display);font-size:1.15rem;margin:0 0 8px;font-weight:700;}
+  .card p{color:var(--ink-dim);font-size:14.5px;line-height:1.55;margin:0;}
+
+  .callout{margin-top:30px;padding:14px 20px;border-left:3px solid var(--wa);background:rgba(63,203,140,.07);border-radius:0 10px 10px 0;font-size:14.5px;color:var(--ink);max-width:640px;}
+
+  /* file tree */
+  pre.tree{
+    font-family:var(--font-mono);font-size:14px;line-height:1.85;
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:26px 30px;margin:38px 0 0;white-space:pre;overflow-x:auto;color:var(--ink);
+  }
+  pre.tree .dim{color:var(--ink-dim);}
+  pre.tree .g{color:var(--wa);}
+  pre.tree .a{color:var(--groq);}
+
+  /* steps flow */
+  ol.steps-flow{list-style:none;margin:38px 0 0;padding:0;max-width:680px;}
+  ol.steps-flow li{position:relative;padding:12px 0 22px 44px;border-left:2px solid var(--line);margin-left:14px;}
+  ol.steps-flow li:last-child{border-color:transparent;padding-bottom:2px;}
+  ol.steps-flow li::before{
+    content:attr(data-n);position:absolute;left:-15px;top:8px;width:28px;height:28px;border-radius:50%;
+    background:var(--surface);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-mono);font-size:12px;color:var(--wa);
+  }
+  .step-title{font-weight:600;font-size:15.5px;color:var(--ink);}
+  .step-desc{color:var(--ink-dim);font-size:14px;margin-top:3px;line-height:1.5;}
+
+  /* two column */
+  .two-col{display:flex;gap:44px;flex-wrap:wrap;margin-top:36px;}
+  .two-col>div{flex:1 1 300px;}
+  .col-label{font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:16px;}
+
+  .provider-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:24px 26px;}
+  .kv{display:flex;justify-content:space-between;gap:16px;padding:11px 0;border-bottom:1px solid var(--line);font-size:14px;}
+  .kv:last-child{border-bottom:none;}
+  .kv .k{color:var(--ink-dim);}
+  .kv .v{font-family:var(--font-mono);color:var(--ink);text-align:right;}
+
+  ul.decide-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:15px;}
+  ul.decide-list li{display:flex;gap:11px;align-items:flex-start;font-size:14.5px;color:var(--ink-dim);line-height:1.5;}
+  ul.decide-list .x{color:var(--fail);font-family:var(--font-mono);flex-shrink:0;font-size:13px;margin-top:2px;}
+
+  .footline{margin-top:30px;font-size:14.5px;color:var(--ink);border-top:1px solid var(--line);padding-top:20px;max-width:680px;}
+
+  /* route table */
+  table.routes{width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:13.5px;margin-top:36px;}
+  table.routes th,table.routes td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);}
+  table.routes th{color:var(--ink-dim);font-weight:500;text-transform:uppercase;font-size:10.5px;letter-spacing:.08em;font-family:var(--font-mono);}
+  table.routes td:first-child{color:var(--ink);}
+  .badge{display:inline-block;padding:3px 9px;border-radius:6px;font-size:11px;font-weight:600;}
+  .badge-get{background:rgba(63,203,140,.15);color:var(--wa);}
+  .badge-post{background:rgba(232,169,74,.15);color:var(--groq);}
+  .badge-delete{background:rgba(226,104,95,.15);color:var(--fail);}
+
+  pre.code-block{
+    font-family:var(--font-mono);font-size:13px;background:var(--surface-2);border:1px solid var(--line);
+    border-radius:10px;padding:18px 22px;color:var(--ink-dim);margin-top:20px;line-height:1.7;white-space:pre-wrap;
+  }
+  pre.code-block .ev{color:var(--wa);}
+
+  /* gap list */
+  .gap-list{display:flex;flex-direction:column;gap:0;margin-top:38px;max-width:700px;}
+  .gap-item{display:flex;gap:16px;align-items:flex-start;padding:18px 0;border-bottom:1px solid var(--line);}
+  .gap-item:last-child{border-bottom:none;}
+  .gap-mark{flex-shrink:0;width:10px;height:10px;border-radius:50%;border:2px solid var(--fail);margin-top:6px;}
+  .gap-title{font-weight:600;font-size:15px;color:var(--ink);}
+  .gap-desc{color:var(--ink-dim);font-size:14px;margin-top:3px;line-height:1.5;}
+
+  .num-eyebrow{font-family:var(--font-mono);font-size:12px;color:var(--ink-dim);}
+
+  /* watermark */
+  .watermark{position:absolute;right:-4%;top:50%;transform:translateY(-50%);width:min(46vw,620px);opacity:.055;color:var(--ink);pointer-events:none;z-index:0;}
+  .watermark svg{width:100%;height:auto;}
+
+  /* hud */
+  .hud{position:fixed;inset:0;z-index:50;pointer-events:none;}
+  .hud-top{
+    position:absolute;top:26px;left:8vw;right:8vw;display:flex;justify-content:space-between;align-items:center;
+    font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;color:var(--ink-dim);text-transform:uppercase;
+  }
+  .hud-brand{opacity:.85;}
+  .fullscreen-btn{
+    position:fixed;top:22px;right:8vw;pointer-events:auto;background:transparent;border:1px solid var(--line);
+    color:var(--ink-dim);width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:15px;z-index:60;
+    display:flex;align-items:center;justify-content:center;transition:border-color .2s,color .2s;
+  }
+  .fullscreen-btn:hover{border-color:var(--wa);color:var(--wa);}
+  .fullscreen-btn:focus-visible{outline:2px solid var(--wa);outline-offset:2px;}
+
+  .hud-bottom{position:absolute;bottom:30px;left:8vw;right:8vw;display:flex;align-items:center;gap:18px;pointer-events:auto;}
+  .nav-btn{
+    pointer-events:auto;background:var(--surface);border:1px solid var(--line);color:var(--ink);
+    width:40px;height:40px;border-radius:50%;font-size:19px;cursor:pointer;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;transition:border-color .2s,opacity .2s;
+    font-family:var(--font-body);
+  }
+  .nav-btn:hover:not(:disabled){border-color:var(--wa);}
+  .nav-btn:disabled{opacity:.3;cursor:default;}
+  .nav-btn:focus-visible{outline:2px solid var(--wa);outline-offset:2px;}
+
+  .track{position:relative;flex:1;height:40px;display:flex;align-items:center;min-width:0;}
+  .track-line{position:absolute;left:0;right:0;top:50%;border-top:2px dashed var(--line);}
+  .dots{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);display:flex;justify-content:space-between;padding:0 10px;}
+  .dot{pointer-events:auto;width:8px;height:8px;border-radius:50%;background:var(--line);border:none;cursor:pointer;padding:0;transition:background .2s,transform .2s;}
+  .dot.active{background:var(--wa);transform:scale(1.5);}
+  .dot:focus-visible{outline:2px solid var(--wa);outline-offset:3px;}
+
+  .pigeon{
+    position:absolute;top:50%;left:0%;width:26px;height:26px;color:var(--wa);
+    transform:translate(-50%,-50%);transition:left .55s cubic-bezier(.4,0,.2,1);
+    filter:drop-shadow(0 2px 6px rgba(0,0,0,.4));animation:bob 2.4s ease-in-out infinite;
+  }
+  .pigeon svg{width:100%;height:100%;display:block;}
+  .pigeon.landed{animation:none;}
+  @keyframes bob{0%,100%{transform:translate(-50%,-50%) translateY(0);}50%{transform:translate(-50%,-50%) translateY(-4px);}}
+
+  .hint{font-family:var(--font-mono);font-size:11px;color:var(--ink-dim);letter-spacing:.06em;white-space:nowrap;}
+
+  .reduced-motion .deck{scroll-behavior:auto;}
+  .reduced-motion .pigeon{transition:none;animation:none;}
+
+  @media (max-width:720px){
+    .slide{padding:90px 6vw 150px;}
+    .hud-top{left:6vw;right:6vw;top:20px;}
+    .fullscreen-btn{right:6vw;top:18px;}
+    .hud-bottom{left:6vw;right:6vw;bottom:20px;gap:12px;}
+    .two-col,.card-row{gap:16px;}
+    .watermark{display:none;}
+    .hint{display:none;}
+    pre.tree{font-size:12px;padding:20px 18px;}
+    table.routes{font-size:12px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+  <!-- 1 : TITLE -->
+  <section class="slide center" id="s1">
+    <div class="slide-inner">
+      <div class="urdu">کبوتر</div>
+      <span class="kicker">System Architecture</span>
+      <h1>Kabutar Agent</h1>
+      <p class="lede center">A typed sentence becomes a sent message — one Groq call, one browser, one inbox.</p>
+      <div class="hero-diagram" style="justify-content:center;">
+        <div class="node">You</div>
+        <div class="arrow">→</div>
+        <div class="node">UI <span>localhost:5000</span></div>
+        <div class="arrow">→</div>
+        <div class="node node-strong">Flask server</div>
+        <div class="arrow">→</div>
+        <div class="branch">
+          <div class="node node-accent">Groq <span>extract intent</span></div>
+          <div class="node node-accent">Chrome <span>WhatsApp Web</span></div>
+          <div class="node node-accent">SMTP <span>email</span></div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="node">Recipient</div>
+      </div>
+      <div class="chip-row" style="justify-content:center;">
+        <span class="chip">Flask</span>
+        <span class="chip">Groq · LPU</span>
+        <span class="chip">Selenium</span>
+        <span class="chip">Server-Sent Events</span>
+        <span class="chip">Local-only</span>
+      </div>
+      <p class="gloss" style="margin-left:auto;margin-right:auto;">kabootar, <em>n.</em> — a pigeon; historically, a carrier of messages.</p>
+    </div>
+  </section>
+
+  <!-- 2 : THREE PROCESSES -->
+  <section class="slide" id="s2">
+    <div class="slide-inner">
+      <span class="kicker">Purpose</span>
+      <h2>One machine, three processes</h2>
+      <p class="lede">Kabutar runs entirely on a single computer — but not in a single window. Three separate processes are live at once, and mixing them up is the most common source of confusion.</p>
+      <div class="card-row">
+        <div class="card">
+          <div class="card-kicker">Process 01</div>
+          <h3>Flask server</h3>
+          <p>The brain. Handles HTTP and SSE. No visible UI of its own — just a Python process in a terminal.</p>
+        </div>
+        <div class="card">
+          <div class="card-kicker">Process 02</div>
+          <h3>Your browser tab</h3>
+          <p>The control panel. <code style="font-family:var(--font-mono);color:var(--ink);">localhost:5000</code> — where you type the command and watch it run.</p>
+        </div>
+        <div class="card">
+          <div class="card-kicker">Process 03</div>
+          <h3>Automated Chrome</h3>
+          <p>The hands. A second, separate browser window, driven by Selenium, logged into WhatsApp Web.</p>
+        </div>
+      </div>
+      <div class="callout">These are not the same window. The tab you click in and the Chrome instance that actually sends the message are two different browser processes.</div>
+    </div>
+  </section>
+
+  <!-- 3 : COMPONENT MAP -->
+  <section class="slide" id="s3">
+    <div class="slide-inner">
+      <span class="kicker">Component Map</span>
+      <h2>Where everything lives</h2>
+      <p class="lede">Routing and logic are deliberately split into two files.</p>
+      <pre class="tree"><span class="dim">kabutar-web/</span>
+├── <span class="g">server.py</span>                  <span class="dim">HTTP + SSE layer only</span>
+├── <span class="g">agent_core.py</span>              <span class="dim">all real logic lives here</span>
+├── contacts.json                <span class="dim">flat contact store</span>
+├── .env                         <span class="dim">secrets & config</span>
+├── .whatsapp_chrome_profile/    <span class="dim">persistent WhatsApp login</span>
+├── diagnose_chrome.py           <span class="dim">standalone diagnostic</span>
+└── static/
+    ├── index.html
+    ├── style.css
+    └── <span class="a">script.js</span></pre>
+      <p class="footline"><strong style="color:var(--ink);">server.py</strong> routes requests and frames SSE events. <strong style="color:var(--ink);">agent_core.py</strong> decides everything else — compose the message, resolve the contact, drive the browser, send the mail.</p>
+    </div>
+  </section>
+
+  <!-- 4 : REQUEST FLOW -->
+  <section class="slide" id="s4">
+    <div class="slide-inner">
+      <span class="kicker">Request Flow</span>
+      <h2>One send, traced end to end</h2>
+      <ol class="steps-flow">
+        <li data-n="1">
+          <div class="step-title">script.js reads the form</div>
+          <div class="step-desc">Renders your message as a chat bubble, then opens a Server-Sent Events connection — a GET request, since native EventSource only supports GET.</div>
+        </li>
+        <li data-n="2">
+          <div class="step-title">server.py streams back a response</div>
+          <div class="step-desc">The /api/send route returns a generator wrapped in a text/event-stream response. The connection stays open.</div>
+        </li>
+        <li data-n="3">
+          <div class="step-title">extract_intent() — the one LLM call</div>
+          <div class="step-desc">Groq turns your free text into structured JSON: a subject and a message.</div>
+        </li>
+        <li data-n="4">
+          <div class="step-title">resolve_contact() — pure local lookup</div>
+          <div class="step-desc">A dict lookup in contacts.json. No network call.</div>
+        </li>
+        <li data-n="5">
+          <div class="step-title">send_whatsapp() or send_email()</div>
+          <div class="step-desc">The actual send. Email is fast; WhatsApp automation runs 5–30 seconds.</div>
+        </li>
+        <li data-n="6">
+          <div class="step-title">Events stream back</div>
+          <div class="step-desc">Each stage emits status, then a terminal done or failed event, back to script.js.</div>
+        </li>
+      </ol>
+      <div class="callout">One open connection. Multiple events over time. Not polling, not WebSockets.</div>
+    </div>
+  </section>
+
+  <!-- 5 : BROWSER SESSION -->
+  <section class="slide" id="s5">
+    <div class="slide-inner">
+      <span class="kicker">WhatsApp Automation — Lifecycle</span>
+      <h2>A browser session that never closes</h2>
+      <p class="lede">The Chrome instance is a module-level singleton — one shared session for the server's whole lifetime, not one per message.</p>
+      <div class="card-row">
+        <div class="card">
+          <h3>Dedicated profile</h3>
+          <p>A separate Chrome user-data directory, so Selenium never collides with a window you already have open.</p>
+        </div>
+        <div class="card">
+          <h3>Stale-lock cleanup</h3>
+          <p>Chrome's own lock files are cleared before every launch — the fix for the "crashed" error left by an unclean kill.</p>
+        </div>
+        <div class="card">
+          <h3>Visible, on purpose</h3>
+          <p>Not headless. Built for a live demo, where the audience needs to actually see it work.</p>
+        </div>
+        <div class="card">
+          <h3>Fast-path login check</h3>
+          <p>A 3-second probe covers "already logged in." Only a fresh session waits out the full QR scan window.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 : THE SEND -->
+  <section class="slide" id="s6">
+    <div class="slide-inner">
+      <span class="kicker">WhatsApp Automation — The Send</span>
+      <h2>Seven steps to one sent message</h2>
+      <ol class="steps-flow">
+        <li data-n="1">
+          <div class="step-title">Normalize the number</div>
+          <div class="step-desc">Strip the plus sign, spaces, and hyphens.</div>
+        </li>
+        <li data-n="2">
+          <div class="step-title">Open WhatsApp's own deep link</div>
+          <div class="step-desc">web.whatsapp.com/send?phone=... — this only opens the chat, it doesn't send anything by itself.</div>
+        </li>
+        <li data-n="3">
+          <div class="step-title">Handle "Continue to Chat," if it appears</div>
+          <div class="step-desc">Shown for numbers not already in your chat history. A short timeout here is expected, not an error.</div>
+        </li>
+        <li data-n="4">
+          <div class="step-title">Wait for the compose box</div>
+          <div class="step-desc">Located by CSS selector, up to 30 seconds.</div>
+        </li>
+        <li data-n="5">
+          <div class="step-title">Type it in — line by line</div>
+          <div class="step-desc">Shift+Enter between lines, since a plain Enter submits the message instead of breaking the line.</div>
+        </li>
+        <li data-n="6">
+          <div class="step-title">Enter, to actually send</div>
+        </li>
+      </ol>
+      <div class="callout">Nothing raises past this function's own boundary. Success or failure is just a string, prefixed with "Failed:" or not — the CLI and the web UI both key off the exact same contract.</div>
+    </div>
+  </section>
+
+  <!-- 7 : THE MODEL -->
+  <section class="slide" id="s7">
+    <div class="slide-inner">
+      <span class="kicker">AI Model</span>
+      <h2>One call. One job.</h2>
+      <div class="two-col">
+        <div>
+          <div class="col-label">Provider</div>
+          <div class="provider-card">
+            <div class="kv"><span class="k">Host</span><span class="v">Groq</span></div>
+            <div class="kv"><span class="k">Model</span><span class="v">openai/gpt-oss-20b</span></div>
+            <div class="kv"><span class="k">Hardware</span><span class="v">LPU, not GPU</span></div>
+            <div class="kv"><span class="k">Round trip</span><span class="v">sub-second</span></div>
+            <div class="kv"><span class="k">Tool choice</span><span class="v">forced, not "auto"</span></div>
+          </div>
+        </div>
+        <div>
+          <div class="col-label">What it does not decide</div>
+          <ul class="decide-list">
+            <li><span class="x">✕</span> Which platform to use — that's the dropdown.</li>
+            <li><span class="x">✕</span> Who the recipient is — dropdown, resolved client-side.</li>
+            <li><span class="x">✕</span> Whether to send at all — no approval step.</li>
+            <li><span class="x">✕</span> Which tool to call — only one is offered.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout">Narrow, single-step, schema-constrained function calling — not agentic multi-step tool use.</div>
+    </div>
+  </section>
+
+  <!-- 8 : ROUTES & EVENTS -->
+  <section class="slide" id="s8">
+    <div class="slide-inner">
+      <span class="kicker">Routing</span>
+      <h2>Five routes, three events</h2>
+      <table class="routes">
+        <tr><th>Method</th><th>Route</th><th>Purpose</th></tr>
+        <tr><td><span class="badge badge-get">GET</span></td><td>/</td><td>Serves index.html</td></tr>
+        <tr><td><span class="badge badge-get">GET</span></td><td>/api/contacts</td><td>List contacts</td></tr>
+        <tr><td><span class="badge badge-post">POST</span></td><td>/api/contacts</td><td>Upsert a contact</td></tr>
+        <tr><td><span class="badge badge-delete">DELETE</span></td><td>/api/contacts/&lt;name&gt;</td><td>Remove a contact</td></tr>
+        <tr><td><span class="badge badge-get">GET</span></td><td>/api/send</td><td>The SSE stream</td></tr>
+      </table>
+      <pre class="code-block"><span class="ev">event: status</span>
+data: {"text": "..."}</pre>
+      <p class="footline">The event <em style="color:var(--ink);font-style:normal;">name</em> — status, done, or failed — routes the client's UI, separate from EventSource's own onerror, which only fires on a dropped connection, never on a business-logic failure.</p>
+    </div>
+  </section>
+
+  <!-- 9 : FRONTEND -->
+  <section class="slide" id="s9">
+    <div class="slide-inner">
+      <span class="kicker">Frontend</span>
+      <h2>No framework, on purpose</h2>
+      <div class="card-row">
+        <div class="card">
+          <div class="card-kicker">index.html</div>
+          <h3>Plain structure</h3>
+          <p>No templating. Every dynamic value is injected by script.js at runtime, via direct DOM manipulation.</p>
+        </div>
+        <div class="card">
+          <div class="card-kicker">style.css</div>
+          <h3>Dark theme, tokenized</h3>
+          <p>CSS custom properties throughout. A low-opacity pigeon watermark with pointer-events: none, so it never intercepts clicks.</p>
+        </div>
+        <div class="card">
+          <div class="card-kicker">script.js</div>
+          <h3>One file</h3>
+          <p>No build step, no imports, no framework. Loaded with a plain script tag at the end of the body.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 : GAPS -->
+  <section class="slide" id="s10">
+    <div class="slide-inner">
+      <span class="kicker">Known Gaps</span>
+      <h2>What isn't here yet</h2>
+      <p class="lede">Named on purpose — the honest gaps matter as much as what's built.</p>
+      <div class="gap-list">
+        <div class="gap-item">
+          <div class="gap-mark"></div>
+          <div>
+            <div class="gap-title">No authentication, anywhere</div>
+            <div class="gap-desc">Fine while bound to localhost. Becomes a real concern the moment this gets tunneled or deployed.</div>
+          </div>
+        </div>
+        <div class="gap-item">
+          <div class="gap-mark"></div>
+          <div>
+            <div class="gap-title">No message history</div>
+            <div class="gap-desc">Contacts persist to disk. Sent messages don't — refresh the page and the transcript is gone.</div>
+          </div>
+        </div>
+        <div class="gap-item">
+          <div class="gap-mark"></div>
+          <div>
+            <div class="gap-title">No retry or backoff</div>
+            <div class="gap-desc">A transient failure on either send path is surfaced once, not retried automatically.</div>
+          </div>
+        </div>
+        <div class="gap-item">
+          <div class="gap-mark"></div>
+          <div>
+            <div class="gap-title">Selenium selectors are fragile</div>
+            <div class="gap-desc">Tied to WhatsApp Web's current, undocumented DOM. If it changes, sending starts timing out.</div>
+          </div>
+        </div>
+        <div class="gap-item">
+          <div class="gap-mark"></div>
+          <div>
+            <div class="gap-title">contacts.json has no write-locking</div>
+            <div class="gap-desc">Not a practical issue at one-user, one-process scale — worth naming for completeness.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 : CLOSING -->
+  <section class="slide center" id="s11">
+    <div class="slide-inner">
+      <span class="kicker">Flight Complete</span>
+      <h1>Questions</h1>
+      <p class="lede center">kabutar · one call, one browser, one inbox</p>
+      <div class="chip-row" style="justify-content:center;">
+        <span class="chip">Flask</span>
+        <span class="chip">Groq</span>
+        <span class="chip">Selenium</span>
+        <span class="chip">SSE</span>
+        <span class="chip">smtplib</span>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- HUD -->
+<div class="hud">
+  <div class="hud-top">
+    <span class="hud-brand">Kabutar — Flight Log</span>
+    <span class="hint">↑ ↓ to navigate</span>
+    <span id="hudCounter">01 / 11</span>
+  </div>
+  <button class="fullscreen-btn" id="fsBtn" aria-label="Toggle fullscreen">⤢</button>
+  <div class="hud-bottom">
+    <button class="nav-btn" id="prevBtn" aria-label="Previous slide">‹</button>
+    <div class="track">
+      <div class="track-line"></div>
+      <div class="dots" id="dots"></div>
+      <div class="pigeon" id="pigeon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1.5 13.5c3-4.2 6.2-4.2 8.5-1 2.3-3.2 5.5-3.2 8.5 1" opacity="0.5"/>
+          <path d="M2 16.5c3.2-4.5 6.5-4.5 9-1 2.5-3.5 5.8-3.5 9 1"/>
+        </svg>
+      </div>
+    </div>
+    <button class="nav-btn" id="nextBtn" aria-label="Next slide">›</button>
+  </div>
+</div>
+
+<script>
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.documentElement.classList.add('reduced-motion');
+  }
+
+  const deck = document.getElementById('deck');
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total = slides.length;
+  const counter = document.getElementById('hudCounter');
+  const pigeon = document.getElementById('pigeon');
+  const dotsWrap = document.getElementById('dots');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const fsBtn = document.getElementById('fsBtn');
+
+  let current = 0;
+
+  slides.forEach((s, i) => {
+    const b = document.createElement('button');
+    b.className = 'dot';
+    b.setAttribute('aria-label', 'Go to slide ' + (i + 1));
+    b.addEventListener('click', () => goTo(i));
+    dotsWrap.appendChild(b);
+  });
+  const dots = Array.from(dotsWrap.children);
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function update(i) {
+    current = i;
+    counter.textContent = pad(i + 1) + ' / ' + pad(total);
+    dots.forEach((d, idx) => d.classList.toggle('active', idx === i));
+    const pct = total > 1 ? (i / (total - 1)) * 100 : 0;
+    pigeon.style.left = pct + '%';
+    pigeon.classList.toggle('landed', i === total - 1);
+    prevBtn.disabled = i === 0;
+    nextBtn.disabled = i === total - 1;
+  }
+
+  function goTo(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    slides[i].scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (e.isIntersecting && e.intersectionRatio >= 0.55) {
+        const idx = slides.indexOf(e.target);
+        if (idx !== -1) update(idx);
+      }
+    });
+  }, { root: deck, threshold: [0.55] });
+  slides.forEach((s) => observer.observe(s));
+
+  prevBtn.addEventListener('click', () => goTo(current - 1));
+  nextBtn.addEventListener('click', () => goTo(current + 1));
+
+  window.addEventListener('keydown', (e) => {
+    if (['ArrowRight', 'ArrowDown', 'PageDown', ' '].includes(e.key)) {
+      e.preventDefault(); goTo(current + 1);
+    } else if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)) {
+      e.preventDefault(); goTo(current - 1);
+    } else if (e.key === 'Home') {
+      e.preventDefault(); goTo(0);
+    } else if (e.key === 'End') {
+      e.preventDefault(); goTo(total - 1);
+    }
+  });
+
+  fsBtn.addEventListener('click', () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen?.();
+    } else {
+      document.exitFullscreen?.();
+    }
+  });
+
+  update(0);
+</script>
+</body>
+</html>
