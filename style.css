@@ -1,0 +1,324 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@1,500&display=swap');
+
+:root {
+  --bg: #131314; /* Slightly darker, true to Gemini */
+  --bg-elevated: #1E1F20;
+  --border: #444746;
+  --text: #E3E3E3;
+  --text-muted: #8E918F;
+  
+  /* Message Colors */
+  --accent: #D97757;   /* Orange for Email */
+  --success: #7FA980;  /* Green for WhatsApp */
+  --error: #C4685A;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* 2. Watermark: Centered and larger */
+body::before {
+  content: "";
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: clamp(400px, 50vw, 700px);
+  height: clamp(400px, 50vw, 700px);
+  background-image: url("/pigeon.png");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  opacity: 0.03; /* Kept very subtle so it doesn't distract from text */
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Live notification bar                                              */
+/* ------------------------------------------------------------------ */
+.notif-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.9rem;
+  text-align: center;
+  transform: translateY(-100%);
+  transition: transform 0.25s ease;
+  border-bottom: 1px solid var(--border);
+}
+.notif-bar.visible { transform: translateY(0); }
+.notif-bar.info    { background: #1E1F20; color: #A9C0E8; }
+.notif-bar.success { background: #1A211D; color: var(--success); }
+.notif-bar.failed  { background: #2A1715; color: var(--error); }
+
+/* ------------------------------------------------------------------ */
+/* Layout & 1. Collapsible Sidebar                                    */
+/* ------------------------------------------------------------------ */
+.layout {
+  position: relative;
+  z-index: 1;
+  display: flex; /* Changed to flex for smooth collapsing animation */
+  max-width: 1200px;
+  margin: 0 auto;
+  height: 100vh;
+  padding: 1rem;
+  gap: 1.5rem;
+}
+
+/* Sidebar Styling & Animation */
+.sidebar {
+  width: 280px;
+  background: var(--bg-elevated);
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex-shrink: 0;
+}
+
+/* Add this class via JS to collapse the sidebar */
+.layout.sidebar-collapsed .sidebar {
+  width: 0;
+  padding: 0;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Sidebar Toggle Button Styling */
+.sidebar-toggle {
+  position: absolute;
+  top: 1.5rem;
+  left: 1.5rem;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1.5rem;
+  z-index: 10;
+  transition: color 0.2s;
+}
+.sidebar-toggle:hover { color: var(--text); }
+
+.sidebar h2 { font-size: 1rem; margin: 0 0 1rem; font-weight: 500;}
+.sidebar h3 {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin: 1.5rem 0 0.75rem;
+}
+
+.contact-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.contact-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+.contact-row:hover { background: rgba(255, 255, 255, 0.05); }
+.contact-row strong { font-size: 0.9rem; font-weight: 500; }
+.muted { color: var(--text-muted); }
+.small { font-size: 0.75rem; margin-top: 0.2rem; }
+
+.delete-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  border-radius: 8px;
+  padding: 0.4rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.delete-btn:hover { color: var(--error); background: rgba(196, 104, 90, 0.1); }
+
+.contact-form { display: flex; flex-direction: column; gap: 0.75rem; }
+.contact-form input {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 0.6rem 0.75rem;
+  font-size: 0.85rem;
+  transition: border-color 0.2s;
+}
+.contact-form input:focus { border-color: var(--text-muted); outline: none; }
+.contact-form button {
+  background: var(--text);
+  color: var(--bg);
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  padding: 0.6rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: opacity 0.2s;
+}
+.contact-form button:hover { opacity: 0.9; }
+
+/* ------------------------------------------------------------------ */
+/* Main panel                                                         */
+/* ------------------------------------------------------------------ */
+.main-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 2rem 0;
+  position: relative;
+}
+
+/* 5. Selectors on top and centered */
+.controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  padding-top: 1rem;
+}
+.field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.field select {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.field select:hover:not(:disabled) { border-color: var(--text-muted); }
+.field select:disabled { color: var(--border); cursor: not-allowed; }
+
+.hero { text-align: center; margin: auto 0; }
+.hero h1 {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: 2.5rem;
+  margin: 0 0 0.5rem;
+}
+.hero .accent { color: var(--accent); }
+.hero p { color: var(--text-muted); font-size: 1rem; margin: 0; }
+.hero.hidden { display: none; }
+
+.transcript {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 2rem;
+  scrollbar-width: none; /* Hides scrollbar for clean look */
+}
+.transcript::-webkit-scrollbar { display: none; }
+
+/* 4. Chat Bubbles */
+.bubble {
+  max-width: 75%;
+  padding: 0.85rem 1.25rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+/* Incoming / Assistant */
+.bubble.assistant {
+  align-self: flex-start;
+  background: transparent;
+  color: var(--text);
+}
+
+/* Outgoing / User */
+.bubble.user {
+  align-self: flex-end;
+  border-radius: 24px;
+  border-bottom-right-radius: 4px; /* Gemini style tail */
+  color: #1a1310;
+}
+/* Email background */
+.bubble.user.email { background: var(--accent); }
+/* WhatsApp background */
+.bubble.user.whatsapp { background: var(--success); }
+/* Default fallback */
+.bubble.user:not(.email):not(.whatsapp) { background: var(--text-muted); }
+
+/* 3. Prompt Box styling */
+.send-form {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  position: sticky;
+  bottom: 2rem;
+  background: var(--bg-elevated);
+  padding: 0.5rem 0.5rem 0.5rem 1.5rem;
+  border-radius: 32px; /* Pill shape */
+  margin: 0 auto;
+  width: 100%;
+  max-width: 800px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.send-form input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 1rem;
+  outline: none;
+}
+.send-form input:disabled { color: var(--text-muted); }
+
+.send-form button {
+  background: var(--text);
+  color: var(--bg);
+  border: none;
+  border-radius: 50%; /* Circle submit button */
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.2s;
+}
+.send-form button:hover:not(:disabled) { transform: scale(1.05); }
+.send-form button:disabled {
+  background: var(--border);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+@media (max-width: 720px) {
+  .layout { flex-direction: column; overflow: auto;}
+  .sidebar { width: 100%; flex-shrink: 0; }
+  .layout.sidebar-collapsed .sidebar { width: 100%; display: none; }
+  .controls { flex-direction: column; gap: 0.5rem; }
+}

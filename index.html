@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kabutar Agent</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+  <div id="notif-bar" class="notif-bar"></div>
+
+  <div class="layout">
+    
+    <!-- Sidebar Toggle Button -->
+    <button id="toggle-btn" class="sidebar-toggle" title="Toggle Sidebar">☰</button>
+
+    <aside class="sidebar">
+      <h2>Contacts</h2>
+
+      <div id="contact-list" class="contact-list"></div>
+
+      <h3>Add / update contact</h3>
+      <form id="contact-form" class="contact-form">
+        <input type="text" id="c-name" placeholder="Name" autocomplete="off" required>
+        <input type="text" id="c-phone" placeholder="Phone (+91...)" autocomplete="off">
+        <input type="email" id="c-email" placeholder="Email" autocomplete="off">
+        <button type="submit">Save contact</button>
+      </form>
+    </aside>
+
+    <main class="main-panel">
+
+      <div class="controls">
+        <label class="field">
+          <span>Platform</span>
+          <select id="platform-select">
+            <option value="whatsapp">WhatsApp</option>
+            <option value="email">Email</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Contact</span>
+          <select id="contact-select">
+            <option value="">Loading contacts...</option>
+          </select>
+        </label>
+      </div>
+
+      <div id="hero" class="hero">
+        <h1>What should we <span class="accent">send</span> today?</h1>
+        <p>Pick a platform and contact above, then type what you want to say.</p>
+      </div>
+
+      <div id="transcript" class="transcript"></div>
+
+      <form id="send-form" class="send-form">
+        <input
+          type="text"
+          id="command-input"
+          placeholder="Add a contact first"
+          autocomplete="off"
+          disabled
+          required
+        >
+        <button type="submit" id="send-btn" disabled>➤</button>
+      </form>
+
+    </main>
+  </div>
+
+  <script src="/script.js"></script>
+</body>
+</html>
