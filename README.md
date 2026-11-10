@@ -128,4 +128,117 @@ Note: WhatsApp automation is a blocking operation. The current progress events i
 
 ## Installation and Setup
 
-### Pr
+### Prerequisites
+
+- Python 3.10 or later
+- Google Chrome
+- ChromeDriver support through Selenium
+- Groq API key
+- SMTP-enabled email account for email functionality
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/Pranavi771/kabutar-ai-communication-agent.git
+
+cd kabutar-ai-communication-agent
+```
+
+### 2. Create a virtual environment
+
+```bash
+python -m venv venv
+```
+
+Activate it on Windows:
+
+```bash
+venv\Scripts\activate
+```
+
+### 3. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Configure environment variables
+
+Create a `.env` file in the project root.
+
+Example configuration:
+
+```env
+GROQ_API_KEY=your_groq_api_key
+GROQ_MODEL=openai/gpt-oss-20b
+
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your_email@example.com
+SMTP_PASS=your_app_password
+
+WA_CHROME_PROFILE=.whatsapp_chrome_profile
+```
+
+Only configure the SMTP variables if you intend to use email functionality.
+
+Never upload your actual `.env` file or credentials to GitHub.
+
+### 5. Launch the application
+
+```bash
+python server.py
+```
+
+The application initialises the WhatsApp browser session and waits for authentication when necessary.
+
+The Flask server runs locally at:
+
+```text
+http://127.0.0.1:5000
+```
+
+WhatsApp automation uses a visible Chrome window. Leave the mouse and keyboard alone while an automated send is running.
+
+## Engineering Highlights
+
+- Persistent Selenium browser-session management.
+- Thread-safe WhatsApp automation using a threading lock.
+- Structured LLM tool calling for message composition.
+- Separation of application routing and agent business logic.
+- Local contact resolution for privacy-conscious recipient handling.
+- Asynchronous progress communication using Server-Sent Events.
+- Environment-based configuration for API and email credentials.
+
+## Security and Limitations
+
+- Designed as a local, single-user application.
+- The Flask server binds to `127.0.0.1` and is not intended for public exposure.
+- Contact information and browser-session data should remain private.
+- API credentials must be stored in environment variables.
+- Browser automation depends on WhatsApp Web and its interface remaining compatible with the Selenium selectors.
+- Message delivery depends on successful authentication and network availability.
+- The current interface reports progress at defined stages, not continuously throughout browser execution.
+
+## Future Improvements
+
+- Add a message preview and explicit confirmation before sending.
+- Improve input validation and API error handling.
+- Introduce automated unit and integration tests.
+- Add structured application logging.
+- Improve browser-session recovery.
+- Add stronger authentication and access controls before considering multi-user deployment.
+- Improve delivery verification and retry handling.
+
+## Author
+
+**Pranavi Joshi**
+
+B.Tech — Electronics & Communication Engineering (AIML)  
+MIT World Peace University, Pune
+
+GitHub: https://github.com/Pranavi771
+
+---
+
+*An engineering project exploring the integration of LLMs, browser automation and communication workflows.*
