@@ -1,30 +1,30 @@
 # 🕊️ Kabutar AI — Intelligent Communication Automation Agent
 
-An LLM-powered communication automation system that transforms natural-language instructions into personalised messages and delivers them through WhatsApp or Email.
+An LLM-powered communication automation application that transforms natural-language instructions into personalised messages and executes them through WhatsApp Web or Email.
 
-Built using Python, Flask, Groq LLMs, Selenium and SMTP.
+**Built with:** Python · Flask · Groq LLM · Selenium · SMTP · JavaScript
 
 ## Overview
 
-Kabutar AI is a communication automation agent designed to simplify everyday messaging.
+Kabutar AI is an AI-assisted communication agent designed to simplify everyday messaging.
 
-Instead of manually composing messages, users can provide casual natural-language instructions such as:
+Users can provide instructions in natural language, such as:
 
 - "Tell Rahul I'll be 15 minutes late."
 - "Email my professor requesting an appointment."
 - "Send Priya a reminder about tomorrow's meeting."
 
-The system interprets the instruction using a Large Language Model (LLM), resolves the selected recipient from a locally stored contact book, and executes the message delivery through the selected communication platform.
+The application uses a Large Language Model to interpret the instruction and compose a message. It then retrieves the selected recipient's contact information from a local JSON contact book and executes the selected communication workflow.
 
-## Key Features
+## Features
 
-- **Natural Language Processing:** Converts informal instructions into contextually appropriate messages using an LLM.
-- **WhatsApp Automation:** Sends messages through WhatsApp Web using Selenium.
-- **Email Automation:** Sends emails using Python's SMTP functionality.
-- **Contact Management:** Supports adding, retrieving and deleting locally stored contacts.
-- **Persistent Browser Session:** Reuses a Chrome profile and Selenium browser session for WhatsApp automation.
-- **Real-Time Progress Updates:** Uses Server-Sent Events (SSE) to stream execution status to the web interface.
-- **Centralised Agent Architecture:** Keeps LLM, contact resolution and communication logic inside a shared core module.
+- **Natural-language message composition:** Converts casual instructions into natural, contextually appropriate messages.
+- **WhatsApp automation:** Uses Selenium to interact with WhatsApp Web through a persistent Chrome session.
+- **Email automation:** Uses Python's SMTP library to send emails.
+- **Contact management:** Add, retrieve and delete contacts through the web interface.
+- **Platform selection:** Choose between WhatsApp and Email.
+- **Real-time progress notifications:** Streams execution-stage updates through Server-Sent Events (SSE).
+- **Modular architecture:** Separates frontend, Flask routing and core agent logic.
 
 ## System Architecture
 
@@ -32,61 +32,107 @@ The system interprets the instruction using a Large Language Model (LLM), resolv
              USER INSTRUCTION
                     |
                     v
-             FLASK WEB SERVER
+             HTML / JS FRONTEND
                     |
                     v
-             AGENT CORE MODULE
+               FLASK SERVER
+                    |
+                    v
+              AGENT CORE
                     |
                     v
               GROQ LLM API
                     |
                     v
-          NATURAL LANGUAGE MESSAGE
+          MESSAGE COMPOSITION
                     |
                     v
             CONTACT RESOLUTION
-             (Local JSON Store)
+              (Local JSON)
                     |
-             +------+------+
-             |             |
-             v             v
-         WHATSAPP        EMAIL
-         SELENIUM        SMTP
-             |             |
-             v             v
-       WHATSAPP WEB    EMAIL SERVER
-             |             |
-             +------+------+
-                    |
-                    v
-             DELIVERY STATUS
+              +-----+-----+
+              |           |
+              v           v
+           WHATSAPP     EMAIL
+           SELENIUM     SMTP
+              |           |
+              v           v
+         WHATSAPP WEB  SMTP SERVER
+              |           |
+              +-----+-----+
                     |
                     v
-               SSE UPDATES
+             EXECUTION RESULT
+                    |
+                    v
+              SSE UPDATES
+                    |
+                    v
+             FRONTEND STATUS
 ```
 
 ## Technology Stack
 
-| Technology | Application |
+| Technology | Purpose |
 |---|---|
-| Python | Core programming and agent logic |
-| Flask | Backend web application and REST APIs |
+| Python | Core application logic |
+| Flask | Backend and HTTP APIs |
 | Groq API | LLM inference |
-| OpenAI Python SDK | OpenAI-compatible API integration |
-| Selenium | WhatsApp Web browser automation |
-| ChromeDriver | Browser control |
-| smtplib | Email delivery |
-| JSON | Local contact storage |
-| Server-Sent Events | Real-time status communication |
+| OpenAI Python SDK | Groq API integration |
+| Selenium | Browser automation |
+| Google Chrome | WhatsApp Web interaction |
+| smtplib | Email communication |
 | HTML, CSS, JavaScript | Web interface |
+| Server-Sent Events | Live progress updates |
+| JSON | Local contact management |
+| python-dotenv | Environment configuration |
 
-## Project Structure
+## Application Workflow
+
+### 1. User Input
+
+The user selects a communication platform and recipient, then enters a natural-language instruction.
+
+### 2. Message Composition
+
+The backend sends the instruction to the Groq LLM API using structured function calling.
+
+The model generates the message content and an optional email subject.
+
+### 3. Contact Resolution
+
+The application retrieves the relevant phone number or email address from its local JSON contact store.
+
+Contact details are not included in the LLM message-composition request.
+
+### 4. Communication Execution
+
+**WhatsApp**
+- Opens or reuses a persistent Selenium-controlled Chrome session.
+- Navigates to the selected recipient's WhatsApp chat.
+- Enters the generated message and submits it.
+
+**Email**
+- Uses SMTP authentication.
+- Constructs an email with a subject and message body.
+- Submits the email through the configured SMTP server.
+
+### 5. Real-Time Feedback
+
+The Flask backend streams status events using SSE. The frontend displays progress notifications and the resulting success or failure message.
+
+The current progress events indicate execution stages rather than continuous browser-level progress.
+
+## Repository Structure
 
 ```text
 kabutar-ai-communication-agent/
 │
 ├── static/
-│   └── index.html
+│   ├── index.html
+│   ├── style.css
+│   ├── script.js
+│   └── pigeon.png        # If included
 │
 ├── agent_core.py
 ├── server.py
@@ -97,42 +143,15 @@ kabutar-ai-communication-agent/
 └── .env.example
 ```
 
-Runtime files such as `.env`, `contacts.json` and the persistent WhatsApp Chrome profile should remain local and must not be committed.
+Runtime data such as `.env`, `contacts.json` and the persistent Chrome profile should remain local and excluded from version control.
 
-## How It Works
-
-### 1. Instruction Processing
-
-The user enters a natural-language instruction and selects a recipient and communication platform.
-
-### 2. LLM-Based Message Generation
-
-The Groq API processes the instruction and generates an appropriate message using structured tool calling.
-
-### 3. Contact Resolution
-
-The agent retrieves the recipient's phone number or email address from the locally stored contact database.
-
-Contact details are resolved locally and are not included in the LLM prompt.
-
-### 4. Message Delivery
-
-- WhatsApp messages are delivered through a persistent Selenium-controlled Chrome session.
-- Emails are delivered through SMTP using configured email credentials.
-
-### 5. Real-Time Feedback
-
-The Flask backend streams status events to the frontend using Server-Sent Events, allowing users to see the progress and final result.
-
-Note: WhatsApp automation is a blocking operation. The current progress events indicate stages before and after the send operation rather than second-by-second browser activity.
-
-## Installation and Setup
+## Installation
 
 ### Prerequisites
 
 - Python 3.10 or later
 - Google Chrome
-- ChromeDriver support through Selenium
+- Selenium-compatible browser driver support
 - Groq API key
 - SMTP-enabled email account for email functionality
 
@@ -164,9 +183,7 @@ pip install -r requirements.txt
 
 ### 4. Configure environment variables
 
-Create a `.env` file in the project root.
-
-Example configuration:
+Create a `.env` file in the project root:
 
 ```env
 GROQ_API_KEY=your_groq_api_key
@@ -175,60 +192,60 @@ GROQ_MODEL=openai/gpt-oss-20b
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=your_email@example.com
-SMTP_PASS=your_app_password
+SMTP_PASS=your_email_app_password
 
 WA_CHROME_PROFILE=.whatsapp_chrome_profile
 ```
 
-Only configure the SMTP variables if you intend to use email functionality.
+Configure SMTP credentials only if you intend to use email functionality.
 
-Never upload your actual `.env` file or credentials to GitHub.
+Never commit actual API keys, passwords or personal contact information.
 
-### 5. Launch the application
+### 5. Run the application
 
 ```bash
 python server.py
 ```
 
-The application initialises the WhatsApp browser session and waits for authentication when necessary.
-
-The Flask server runs locally at:
+Open the local application:
 
 ```text
 http://127.0.0.1:5000
 ```
 
-WhatsApp automation uses a visible Chrome window. Leave the mouse and keyboard alone while an automated send is running.
+On first use, scan the WhatsApp Web QR code if prompted.
+
+The application uses a visible Chrome browser window during WhatsApp automation.
 
 ## Engineering Highlights
 
+- Structured LLM function calling for natural-language message generation.
 - Persistent Selenium browser-session management.
 - Thread-safe WhatsApp automation using a threading lock.
-- Structured LLM tool calling for message composition.
-- Separation of application routing and agent business logic.
-- Local contact resolution for privacy-conscious recipient handling.
-- Asynchronous progress communication using Server-Sent Events.
-- Environment-based configuration for API and email credentials.
+- REST endpoints for contact management.
+- Server-Sent Events for live frontend notifications.
+- Separation of Flask routing and shared agent logic.
+- Local contact resolution and environment-based configuration.
 
 ## Security and Limitations
 
 - Designed as a local, single-user application.
-- The Flask server binds to `127.0.0.1` and is not intended for public exposure.
-- Contact information and browser-session data should remain private.
-- API credentials must be stored in environment variables.
-- Browser automation depends on WhatsApp Web and its interface remaining compatible with the Selenium selectors.
-- Message delivery depends on successful authentication and network availability.
-- The current interface reports progress at defined stages, not continuously throughout browser execution.
+- Flask binds to `127.0.0.1`; public deployment is not supported by the current configuration.
+- Contact records and browser session data should remain private.
+- Credentials must be stored outside version control.
+- WhatsApp automation depends on WhatsApp Web and its page structure.
+- SMTP delivery depends on valid credentials and network availability.
+- The current application reports the result of its automation operation; this should not be interpreted as independent confirmation of recipient receipt or reading.
 
-## Future Improvements
+## Future Enhancements
 
-- Add a message preview and explicit confirmation before sending.
-- Improve input validation and API error handling.
-- Introduce automated unit and integration tests.
-- Add structured application logging.
-- Improve browser-session recovery.
-- Add stronger authentication and access controls before considering multi-user deployment.
-- Improve delivery verification and retry handling.
+- Add a message preview and explicit send confirmation.
+- Improve request validation and error handling.
+- Replace GET-based message submission with POST-based streaming.
+- Add automated tests for contact management and message composition.
+- Improve structured logging and browser-session recovery.
+- Add authentication and access controls before supporting multiple users.
+- Introduce stronger delivery-status verification.
 
 ## Author
 
@@ -237,8 +254,8 @@ WhatsApp automation uses a visible Chrome window. Leave the mouse and keyboard a
 B.Tech — Electronics & Communication Engineering (AIML)  
 MIT World Peace University, Pune
 
-GitHub: https://github.com/Pranavi771
+[GitHub Profile](https://github.com/Pranavi771)
 
 ---
 
-*An engineering project exploring the integration of LLMs, browser automation and communication workflows.*
+*An engineering project exploring the integration of Large Language Models, browser automation and communication workflows.*
